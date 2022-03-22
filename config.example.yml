@@ -1,0 +1,14 @@
+# Canvas instance URL. Usually you just need to replace "canvas" with your Canvas instance name.
+canvas_url: https://canvas.instructure.com
+
+# The endpoint for the ClickUp API, rarely changed.
+clickup_url: https://api.clickup.com/api/v2
+
+# Token for Canvas, this is found on your settings page
+canvas_token: <YOUR_TOKEN_HERE>
+
+# Token for ClickUp, this is found in Settings > Apps
+clickup_token: <YOUR_TOKEN_HERE>
+
+# ClickUp List ID
+clickup_list_id: 163143838
