@@ -29,9 +29,10 @@ Pre-requisites:
 - Canvas Account and Instance (usually through a school)
 - A ClickUp List with the following setup:
     - Custom Fields Enabled
-      - Enabled Fields: "Canvas Link" and "Class"
+      - Enabled Fields: "Canvas Link" (URL) and "Class" (Dropdown)
+      - The class dropdown should be whatever classes you have. By default, this is exactly the same as the name on Canvas.
     - Due Date Time ClickApp Enabled
-- Classes on Canvas follow the format "xxxx-NAME-yyyy-other etc" to "NAME yyyy" (might be a little specific to me, but it works)
+    - Statuses: "To Do", "Submitted", and "Graded"
 
 0) `cp config.example.yml config.yml` then fill out the config.yml file
 1) `bundle install`

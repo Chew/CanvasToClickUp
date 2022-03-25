@@ -8,8 +8,19 @@ require 'yaml'
 require "uri"
 
 require_relative './assignment'
+require_relative './clickup'
 require_relative './custom_field'
 require_relative './task'
+
+# Always load example first in case of missing methods
+require_relative './custom.example'
+
+# Attempt to load custom.rb file, if it exists. Otherwise, use default values.
+begin
+  require_relative './custom'
+rescue LoadError
+  # No custom.rb file found
+end
 
 # Load the config.yml relative to this file
 CONFIG = YAML.load_file(File.join(File.dirname(__FILE__), 'config.yml'))
@@ -103,15 +114,6 @@ class CanvasToClickUp
     JSON.parse(response.read_body)
   end
 
-  # Creates a new task in ClickUp in the configured list
-  def create_task(body)
-    JSON.parse RestClient.post("#{BASE_URLS[:clickup]}/list/#{CLICKUP_LIST_ID}/task",
-                               body.to_json,
-                               Authorization: TOKENS[:clickup],
-                               content_type: :json,
-                               accept: :json)
-  end
-
   def update_task(id, data)
 
   end
@@ -164,11 +166,7 @@ print_to_console "\r[0/#{TASKS}] Processing tasks."
 
 # @type assignments [List<Assignment>]
 all_assignments.each do |course_name, assignments|
-  class_name = if course_name.start_with? "2222" # temporary hack
-                 course_name.split('-')[1..2].join(' ')
-               elsif course_name.start_with? "CSE 1310"
-                 "CSE 1310"
-               end
+  class_name = course_name.class_name
 
   # @type assignment [Assignment]
   assignments.each do |assignment|
@@ -207,11 +205,7 @@ all_assignments.each do |course_name, assignments|
       print_to_console "\r[#{index}/#{TASKS}] Updating in ClickUp with the following changes: #{update.map { |k, _v| k.to_s }.join(', ')}"
       print_to_console "\n[#{index}/#{TASKS}] Processing #{assignment.name} in #{class_name} with ClickUp task ID #{clickup_task.id}"
 
-      response = JSON.parse RestClient.put("#{BASE_URLS[:clickup]}/task/#{clickup_task.id}",
-                                           update.to_json,
-                                           Authorization: TOKENS[:clickup],
-                                           content_type: :json,
-                                           accept: :json)
+      ClickUp.create_task(update)
 
       updated += 1
     else
