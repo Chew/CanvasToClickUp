@@ -53,8 +53,7 @@ class CanvasToClickUp
     course_bodies = []
 
     courses.each_with_index do |course_id, index|
-      body = "c#{index}: course(id: \"#{course_id}\") { name, assignmentsConnection { nodes { name, description, dueAt, htmlUrl, submissionTypes, submissionsConnection { nodes { grade } } } } }"
-      course_bodies << body
+      course_bodies << "c#{index}: course(id: \"#{course_id}\") { name, assignmentsConnection { nodes { name, description, dueAt, htmlUrl, submissionTypes, submissionsConnection { nodes { grade } } } } }"
     end
 
     data = send_graphql("query { #{course_bodies.join(' ')} }")['data']
@@ -63,27 +62,11 @@ class CanvasToClickUp
 
     data.each do |_, nodes|
       course_assignments = []
-      nodes['assignmentsConnection']['nodes'].each do |node|
-        course_assignments.push Assignment.new(node)
-      end
+      nodes['assignmentsConnection']['nodes'].each { |node| course_assignments.push Assignment.new(node) }
       assignments[nodes['name']] = course_assignments
     end
 
     assignments
-  end
-
-  # Gets the class name
-  # @return [String] the class name
-  def class_name
-    # Convert "2222-COMS-2302-021-PROFESSIONAL TECHNICAL COMM" to "COMS 2302"
-    @data['context_name']
-  end
-
-  # Gets a list of tasks to-do from Canvas
-  # @return [Array<Assignment>] list of tasks to-do
-  def todo
-    list = JSON.parse(RestClient.get("#{BASE_URLS[:canvas]}/users/self/todo?per_page=100", Authorization: TOKENS[:canvas]))
-    list.map { |task| Assignment.new(task) }
   end
 
   # Gets a list of tasks from ClickUp
@@ -117,29 +100,67 @@ class CanvasToClickUp
     request.body = "{\"query\":#{query.to_json},\"variables\":{}}"
 
     response = https.request(request)
-    body = response.read_body
-    JSON.parse(body)
+    JSON.parse(response.read_body)
+  end
+
+  # Creates a new task in ClickUp in the configured list
+  def create_task(body)
+    JSON.parse RestClient.post("#{BASE_URLS[:clickup]}/list/#{CLICKUP_LIST_ID}/task",
+                               body.to_json,
+                               Authorization: TOKENS[:clickup],
+                               content_type: :json,
+                               accept: :json)
+  end
+
+  def update_task(id, data)
+
+  end
+
+  def update_custom_field(id, data)
+    # https://api.clickup.com/api/v2/task/task_id/field/field_id/
   end
 end
 
-puts "Fetching data!"
+TERMINAL_WIDTH = `tput cols`.to_i
+
+def print_to_console(message)
+  if message.length < TERMINAL_WIDTH
+    # Pad the message to the terminal width
+    message += ' ' * (TERMINAL_WIDTH - message.length)
+  end
+
+  print message
+end
+
+
+print_to_console "[0/4] Fetching data!"
 
 info = CanvasToClickUp.new
 
+print_to_console "\r[1/4] Retrieving active courses."
 courses = info.active_courses
-puts "Active courses: #{courses}"
 
+print_to_console "\r[2/4] Retrieving assignments."
 all_assignments = info.assignments(courses)
 
-puts "There are #{all_assignments.values.flatten.length} assignments in #{courses.length} courses. Wow!"
-# puts "Assignments: #{assignments}"
+puts "\rDetected #{all_assignments.values.flatten.length} assignments in #{courses.length} courses."
 
+print_to_console "\r[3/4] Retrieving tasks."
 clickup = info.tasks
+
+print_to_console "\r[4/4] Retrieving custom fields."
 fields = info.custom_fields
+
+puts "\rAll data retrieved! Starting to process."
 
 created = 0
 updated = 0
 nothing = 0
+index = 0
+
+TASKS = all_assignments.values.flatten.length
+
+print_to_console "\r[0/#{TASKS}] Processing tasks."
 
 # @type assignments [List<Assignment>]
 all_assignments.each do |course_name, assignments|
@@ -151,11 +172,12 @@ all_assignments.each do |course_name, assignments|
 
   # @type assignment [Assignment]
   assignments.each do |assignment|
-    puts "Detected #{assignment.name} in #{class_name}"
+    index += 1
+    print_to_console "\r[#{index}/#{TASKS}] Processing #{assignment.name} in #{class_name}"
 
     clickup_task = clickup.find { |item| item.canvas_link == assignment.url }
     if clickup_task
-      puts "  Assignment #{assignment.name} already exists in ClickUp with ID #{clickup_task.id}"
+      print_to_console "\r[#{index}/#{TASKS}] Processing #{assignment.name} in #{class_name} with ClickUp task ID #{clickup_task.id}"
 
       update = {}
       update[:name] = assignment.name unless assignment.name == clickup_task.name
@@ -172,13 +194,18 @@ all_assignments.each do |course_name, assignments|
         update[:status] = assignment.status
         # puts "  !Status changed from #{clickup_task.status.downcase} to #{assignment.status.downcase}"
       end
+      if assignment.graded? && assignment.grade != clickup_task.grade
+        #update[:grade] = assignment.grade
+        #puts "  !Grade changed from #{clickup_task.grade} to #{assignment.grade}"
+      end
 
       if update.empty?
         nothing += 1
         next
       end
 
-      puts "  Updating #{assignment.name} in ClickUp with the following changes: #{update.map { |k, _v| k.to_s }.join(', ')}"
+      print_to_console "\r[#{index}/#{TASKS}] Updating in ClickUp with the following changes: #{update.map { |k, _v| k.to_s }.join(', ')}"
+      print_to_console "\n[#{index}/#{TASKS}] Processing #{assignment.name} in #{class_name} with ClickUp task ID #{clickup_task.id}"
 
       response = JSON.parse RestClient.put("#{BASE_URLS[:clickup]}/task/#{clickup_task.id}",
                                            update.to_json,
@@ -188,7 +215,8 @@ all_assignments.each do |course_name, assignments|
 
       updated += 1
     else
-      puts "  Creating task #{assignment.name}"
+      print_to_console "\r[#{index}/#{TASKS}] Creating task."
+      print_to_console "\n[#{index}/#{TASKS}] Processing #{assignment.name} in #{class_name}."
 
       # Handle custom fields
       custom_fields = []
@@ -232,7 +260,8 @@ all_assignments.each do |course_name, assignments|
   # puts response
 end
 
-puts "  Done!"
+print_to_console "\rFinished processing #{index} tasks."
+puts "\n"
 
 puts "Created: #{created}"
 puts "Updated: #{updated}"

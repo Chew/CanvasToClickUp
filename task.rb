@@ -46,4 +46,8 @@ class Task
     value = field['value']
     field['type_config']['options'][value]['name']
   end
+
+  def grade
+    custom_fields.find { |field| field['name'] == 'Grade' }['value']
+  end
 end
