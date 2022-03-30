@@ -114,10 +114,6 @@ class CanvasToClickUp
     JSON.parse(response.read_body)
   end
 
-  def update_task(id, data)
-
-  end
-
   def update_custom_field(id, data)
     # https://api.clickup.com/api/v2/task/task_id/field/field_id/
   end
@@ -205,7 +201,7 @@ all_assignments.each do |course_name, assignments|
       print_to_console "\r[#{index}/#{TASKS}] Updating in ClickUp with the following changes: #{update.map { |k, _v| k.to_s }.join(', ')}"
       print_to_console "\n[#{index}/#{TASKS}] Processing #{assignment.name} in #{class_name} with ClickUp task ID #{clickup_task.id}"
 
-      ClickUp.create_task(update)
+      ClickUp.update_task(clickup_task.id, update)
 
       updated += 1
     else
@@ -241,11 +237,7 @@ all_assignments.each do |course_name, assignments|
         "custom_fields": custom_fields
       }
 
-      response = JSON.parse RestClient.post("#{BASE_URLS[:clickup]}/list/#{CLICKUP_LIST_ID}/task",
-                                            body.to_json,
-                                            Authorization: TOKENS[:clickup],
-                                            content_type: :json,
-                                            accept: :json)
+      ClickUp.create_task(body)
 
       created += 1
     end
