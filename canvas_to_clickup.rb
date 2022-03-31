@@ -64,7 +64,7 @@ class CanvasToClickUp
     course_bodies = []
 
     courses.each_with_index do |course_id, index|
-      course_bodies << "c#{index}: course(id: \"#{course_id}\") { name, assignmentsConnection { nodes { name, description, dueAt, unlockAt, htmlUrl, submissionTypes, submissionsConnection { nodes { grade } } } } }"
+      course_bodies << "c#{index}: course(id: \"#{course_id}\") { name, assignmentsConnection { nodes { name, description, dueAt, unlockAt, htmlUrl, submissionTypes, expectsSubmission, submissionsConnection { nodes { grade } } } } }"
     end
 
     data = send_graphql("query { #{course_bodies.join(' ')} }")['data']
@@ -155,6 +155,15 @@ def should_sync?(type)
   CONFIG['sync'][type]['enabled'] && CONFIG['sync'][type]['overwrite']
 end
 
+# Whether a specific option is enabled
+# @param option [String] the option to check
+# @return [Boolean] whether the option is enabled
+def option_enabled?(option)
+  return true if CONFIG['options'].nil?
+  return true if CONFIG['options'][option].nil?
+
+  CONFIG['options'][option]
+end
 
 print_to_console "[0/4] Fetching data!"
 
@@ -179,6 +188,7 @@ puts "\rAll data retrieved! Starting to process."
 created = 0
 updated = 0
 nothing = 0
+skipped = 0
 index = 0
 
 TASKS = all_assignments.values.flatten.length
@@ -193,6 +203,12 @@ all_assignments.each do |course_name, assignments|
   assignments.each do |assignment|
     index += 1
     print_to_console "\r[#{index}/#{TASKS}] Processing #{assignment.name} in #{class_name}"
+
+    if !assignment.expects_submission? && !option_enabled?('sync_submissionless_assignments')
+      # Skip submissionless assignments
+      skipped += 1
+      next
+    end
 
     clickup_task = clickup.find { |item| item.canvas_link == assignment.url }
     if clickup_task
@@ -296,4 +312,5 @@ puts "\n"
 
 puts "Created: #{created}"
 puts "Updated: #{updated}"
+puts "Skipped: #{skipped}"
 puts "No Changes: #{nothing}"

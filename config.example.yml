@@ -40,3 +40,10 @@ sync:
   # The course name custom field. No overwrite needed, since assignments can't be moved.
   course_name:
     enabled: true
+
+# Other options on what to sync
+options:
+  # Whether to sync assignments that have no way of being submitted.
+  # Typically these are assignments reserved for grading purposes.
+  # They likely have a grade, but no way to submit.
+  sync_submissionless_assignments: true

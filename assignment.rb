@@ -74,6 +74,11 @@ class Assignment
     !submissions.empty?
   end
 
+  # Whether an assignment expects a submission
+  def expects_submission?
+    @data['expectsSubmission']
+  end
+
   def status
     return "Graded" if graded?
     return "Submitted" if submitted?
