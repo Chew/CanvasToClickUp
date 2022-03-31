@@ -12,3 +12,31 @@ clickup_token: <YOUR_TOKEN_HERE>
 
 # ClickUp List ID
 clickup_list_id: 163143838
+
+# Data to sync
+# Enabled determines if the data should be synced at all.
+# Overwrite means that any data from Canvas will overwrite data in ClickUp.
+# Disabling disables both creating and updating.
+sync:
+  # Assignment title. Must be enabled.
+  title:
+    overwrite: true
+  # The assignment description.
+  description:
+    enabled: true
+    overwrite: true
+  # The assignment due date. Not all assignments have due dates.
+  due_at:
+    enabled: true
+    overwrite: true
+  # When the assignment is unlocked. Not all assignments may have this!
+  start_at:
+    enabled: true
+    overwrite: true
+  # The assignment status. Whether "To-Do", "Submitted", or "Graded"
+  status:
+    enabled: true
+    overwrite: true
+  # The course name custom field. No overwrite needed, since assignments can't be moved.
+  course_name:
+    enabled: true

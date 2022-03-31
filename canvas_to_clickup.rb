@@ -130,6 +130,31 @@ def print_to_console(message)
   print message
 end
 
+# Whether we should create the task with the given option.
+# @param type [String] the option to check
+# @return [Boolean] whether we should sync the option
+def should_create?(type)
+  # Handle null cases. Always return true if no type is provided.
+  return true if CONFIG['sync'].nil?
+  return true if CONFIG['sync'][type].nil?
+  return true if CONFIG['sync'][type]['enabled'].nil?
+
+  CONFIG['sync'][type]['enabled']
+end
+
+# Whether we should sync the given option.
+# @param type [String] the option to check
+# @return [Boolean] whether we should sync the option
+def should_sync?(type)
+  # Handle null cases. Always return true if no type is provided.
+  return true if CONFIG['sync'].nil?
+  return true if CONFIG['sync'][type].nil?
+  return true if CONFIG['sync'][type]['enabled'].nil?
+  return true if CONFIG['sync'][type]['overwrite'].nil?
+
+  CONFIG['sync'][type]['enabled'] && CONFIG['sync'][type]['overwrite']
+end
+
 
 print_to_console "[0/4] Fetching data!"
 
@@ -174,29 +199,39 @@ all_assignments.each do |course_name, assignments|
       print_to_console "\r[#{index}/#{TASKS}] Processing #{assignment.name} in #{class_name} with ClickUp task ID #{clickup_task.id}"
 
       update = {}
-      update[:name] = assignment.name unless assignment.name == clickup_task.name
 
-      add = assignment.due_date.nil? ? nil : assignment.due_date.to_i * 1000
-      cdd = clickup_task.due_date.nil? ? nil : clickup_task.due_date.to_i * 1000
-      unless add == cdd
-        # puts "  !Due date changed from #{clickup_task.due_date} to #{assignment.due_date}"
-        update[:due_date] = add
-        update[:due_date_time] = true
+      # Update the task name
+      update[:name] = assignment.name if assignment.name != clickup_task.name && should_sync?('name')
+
+      # Update the task description
+      update[:description] = assignment.description unless assignment.description == clickup_task.description && should_sync?('description')
+
+      # Update the due date
+      if should_sync?('due_at')
+        add = assignment.due_date.nil? ? nil : assignment.due_date.to_i * 1000
+        cdd = clickup_task.due_date.nil? ? nil : clickup_task.due_date.to_i * 1000
+        unless add == cdd
+          update[:due_date] = add
+          update[:due_date_time] = true
+        end
       end
-      aud = assignment.unlocks_at.nil? ? nil : assignment.unlocks_at.to_i * 1000
-      csd = clickup_task.start_date.nil? ? nil : clickup_task.start_date.to_i * 1000
-      unless aud == csd
-        update[:start_date] = aud
-        update[:start_date_time] = true
+
+      # Update the start date
+      if should_sync?('start_at')
+        aud = assignment.unlocks_at.nil? ? nil : assignment.unlocks_at.to_i * 1000
+        csd = clickup_task.start_date.nil? ? nil : clickup_task.start_date.to_i * 1000
+        unless aud == csd
+          update[:start_date] = aud
+          update[:start_date_time] = true
+        end
       end
-      update[:description] = assignment.description unless assignment.description.to_s.chomp == clickup_task.description.to_s.chomp
-      unless assignment.status.downcase == clickup_task.status.downcase
-        update[:status] = assignment.status
-        # puts "  !Status changed from #{clickup_task.status.downcase} to #{assignment.status.downcase}"
-      end
+
+      update[:status] = assignment.status unless assignment.status.downcase == clickup_task.status.downcase && should_sync?('status')
+
+      # TODO: Update the grade
       if assignment.graded? && assignment.grade != clickup_task.grade
-        #update[:grade] = assignment.grade
-        #puts "  !Grade changed from #{clickup_task.grade} to #{assignment.grade}"
+        # update[:grade] = assignment.grade
+        # puts "  !Grade changed from #{clickup_task.grade} to #{assignment.grade}"
       end
 
       if update.empty?
@@ -226,22 +261,26 @@ all_assignments.each do |course_name, assignments|
           }
           next
         when "Class"
-          custom_fields << {
-            id: field.id,
-            value: field.dropdown_option(class_name).index
-          }
+          if should_create?('course_name')
+            custom_fields << {
+              id: field.id,
+              value: field.dropdown_option(class_name).index
+            }
+          end
           next
         end
       end
 
-      body = {
-        "name": assignment.name,
-        "description": assignment.description,
-        "status": "To Do",
-        "due_date": assignment.due_date.to_i * 1000,
-        "due_date_time": true,
-        "custom_fields": custom_fields
-      }
+      body = {}
+
+      body['name'] = assignment.name if should_create?('name')
+      body['description'] = assignment.description if should_create?('description')
+      body['status'] = should_create?('status') ? assignment.status : 'To Do'
+      body['due_date'] = assignment.due_date.nil? ? nil : assignment.due_date.to_i * 1000 if should_create?('due_at')
+      body['due_date_time'] = true
+      body['start_date'] = assignment.unlocks_at.nil? ? nil : assignment.unlocks_at.to_i * 1000 if should_create?('start_at')
+      body['start_date_time'] = true
+      body['custom_fields'] = custom_fields unless custom_fields.empty?
 
       ClickUp.create_task(body)
 

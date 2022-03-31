@@ -15,7 +15,7 @@ class Task
   end
 
   def description
-    @data['description']
+    @data['description'].to_s.strip
   end
 
   def custom_fields
