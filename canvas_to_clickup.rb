@@ -64,7 +64,7 @@ class CanvasToClickUp
     course_bodies = []
 
     courses.each_with_index do |course_id, index|
-      course_bodies << "c#{index}: course(id: \"#{course_id}\") { name, assignmentsConnection { nodes { name, description, dueAt, htmlUrl, submissionTypes, submissionsConnection { nodes { grade } } } } }"
+      course_bodies << "c#{index}: course(id: \"#{course_id}\") { name, assignmentsConnection { nodes { name, description, dueAt, unlockAt, htmlUrl, submissionTypes, submissionsConnection { nodes { grade } } } } }"
     end
 
     data = send_graphql("query { #{course_bodies.join(' ')} }")['data']
@@ -182,6 +182,12 @@ all_assignments.each do |course_name, assignments|
         # puts "  !Due date changed from #{clickup_task.due_date} to #{assignment.due_date}"
         update[:due_date] = add
         update[:due_date_time] = true
+      end
+      aud = assignment.unlocks_at.nil? ? nil : assignment.unlocks_at.to_i * 1000
+      csd = clickup_task.start_date.nil? ? nil : clickup_task.start_date.to_i * 1000
+      unless aud == csd
+        update[:start_date] = aud
+        update[:start_date_time] = true
       end
       update[:description] = assignment.description unless assignment.description.to_s.chomp == clickup_task.description.to_s.chomp
       unless assignment.status.downcase == clickup_task.status.downcase

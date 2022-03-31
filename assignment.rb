@@ -34,6 +34,14 @@ class Assignment
     Time.parse @data['dueAt']
   end
 
+  # An assignment may only unlock at a certain time. If this is the case, this will not be nil.
+  # @return [Time, nil] the unlock date, or nil if there is not one
+  def unlocks_at
+    return nil if @data['unlockAt'].nil?
+
+    Time.parse @data['unlockAt']
+  end
+
   # The submission types for this assignment
   # @return [Array<String>] the submission types
   def types

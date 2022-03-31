@@ -33,6 +33,12 @@ class Task
     Time.at @data['due_date'].to_i / 1000
   end
 
+  def start_date
+    return nil if @data['start_date'].nil?
+
+    Time.at @data['start_date'].to_i / 1000
+  end
+
   # @return [String] a link to the canvas html_url
   # @see Assignment#url
   def canvas_link
