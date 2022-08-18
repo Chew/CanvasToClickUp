@@ -47,7 +47,14 @@ class CanvasToClickUp
   def active_courses
     graphql = "query { allCourses { id, name, term { id, startAt, endAt } } }"
 
-    courses = send_graphql(graphql)['data']['allCourses']
+    response = send_graphql(graphql)
+
+    begin
+      courses = response['data']['allCourses']
+    rescue NoMethodError
+      puts "Failed to retrieve courses. Response: #{response}"
+      exit 1
+    end
 
     courses.select! do |course|
       course['term']['startAt'].nil? || (Time.parse(course['term']['startAt']) < Time.now && Time.parse(course['term']['endAt']) > Time.now)
