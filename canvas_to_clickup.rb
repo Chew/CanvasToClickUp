@@ -274,6 +274,7 @@ all_assignments.each do |course_name, assignments|
 
       # Handle custom fields
       custom_fields = []
+      skip = false
       fields.each do |field|
         # noinspection RubyCaseWithoutElseBlockInspection
         case field.name
@@ -285,14 +286,28 @@ all_assignments.each do |course_name, assignments|
           next
         when "Class"
           if should_create?('course_name')
-            custom_fields << {
-              id: field.id,
-              value: field.dropdown_option(class_name).index
-            }
+            dropdown = field.dropdown_option(class_name)
+            if dropdown.nil?
+              if option_enabled?('sync_submissionless_assignments')
+                skipped += 1
+                skip = true
+              else
+                puts "Could not find dropdown item for: #{class_name}"
+                puts "Please create it on ClickUp or enable 'skip_missing_dropdown_options' in config.yml"
+                exit
+              end
+            else
+              custom_fields << {
+                id: field.id,
+                value: dropdown.index
+              }
+            end
           end
           next
         end
       end
+
+      next if skip
 
       body = {}
 

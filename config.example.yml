@@ -47,3 +47,7 @@ options:
   # Typically these are assignments reserved for grading purposes.
   # They likely have a grade, but no way to submit.
   sync_submissionless_assignments: true
+  # Whether to skip syncing assignments if a proper dropdown option cannot be found.
+  # This can be used to skip some courses, if desired.
+  # If left false, the program will die until you add the proper option.
+  skip_missing_dropdown_options: false
