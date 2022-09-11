@@ -36,6 +36,7 @@ sync:
   # The assignment status. Whether "To-Do", "Submitted", or "Graded"
   status:
     enabled: true
+    # You can ignore status overwriting by adding a label called "Ignored" to the ClickUp task.
     overwrite: true
   # The course name custom field. No overwrite needed, since assignments can't be moved.
   course_name:

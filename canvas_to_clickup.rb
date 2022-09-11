@@ -221,6 +221,12 @@ all_assignments.each do |course_name, assignments|
     if clickup_task
       print_to_console "\r[#{index}/#{TASKS}] Processing #{assignment.name} in #{class_name} with ClickUp task ID #{clickup_task.id}"
 
+      # Ignore if ignored
+      if clickup_task.ignored?
+        skipped += 1
+        next
+      end
+
       update = {}
 
       # Update the task name
@@ -262,7 +268,7 @@ all_assignments.each do |course_name, assignments|
         next
       end
 
-      print_to_console "\r[#{index}/#{TASKS}] Updating in ClickUp with the following changes: #{update.map { |k, _v| k.to_s }.join(', ')}"
+      print_to_console "\r[#{index}/#{TASKS}] Updating #{assignment.name} in #{class_name} with the following changes: #{update.map { |k, _v| k.to_s }.join(', ')}"
       print_to_console "\n[#{index}/#{TASKS}] Processing #{assignment.name} in #{class_name} with ClickUp task ID #{clickup_task.id}"
 
       ClickUp.update_task(clickup_task.id, update)

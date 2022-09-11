@@ -22,6 +22,10 @@ class Task
     @data['custom_fields']
   end
 
+  def tags
+    @data['tags']
+  end
+
   def status
     @data['status']['status']
   end
@@ -55,5 +59,10 @@ class Task
 
   def grade
     custom_fields.find { |field| field['name'] == 'Grade' }['value']
+  end
+
+  # Whether or not this task is ignored
+  def ignored?
+    !tags.find { |tag| tag['name'].downcase == 'ignored' }.nil?
   end
 end
