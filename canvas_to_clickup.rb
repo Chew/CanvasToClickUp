@@ -227,6 +227,12 @@ all_assignments.each do |course_name, assignments|
         next
       end
 
+      # Ignore if submissionless and not graded, but only if ignore_submissionless_until_graded is enabled
+      if !assignment.expects_submission? && clickup_task.submissionless? && option_enabled?('ignore_submissionless_until_graded') && !assignment.graded?
+        skipped += 1
+        next
+      end
+
       update = {}
 
       # Update the task name

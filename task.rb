@@ -65,4 +65,8 @@ class Task
   def ignored?
     !tags.find { |tag| tag['name'].downcase == 'ignored' }.nil?
   end
+
+  def submissionless?
+    !tags.find { |tag| tag['name'].downcase == 'submissionless' }.nil?
+  end
 end

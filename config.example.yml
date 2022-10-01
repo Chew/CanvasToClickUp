@@ -38,9 +38,16 @@ sync:
     enabled: true
     # You can ignore status overwriting by adding a label called "Ignored" to the ClickUp task.
     overwrite: true
+    # Overwrite if the status is not one of the specified statuses. If overwrite is false, this is also false.
+    overwrite_custom: false
   # The course name custom field. No overwrite needed, since assignments can't be moved.
   course_name:
     enabled: true
+  # The final grade on the assignment.
+  # This is off by default because closed/done tasks are typically hidden by default.
+  grade:
+    enabled: false
+    overwrite: true
 
 # Other options on what to sync
 options:
@@ -48,6 +55,11 @@ options:
   # Typically these are assignments reserved for grading purposes.
   # They likely have a grade, but no way to submit.
   sync_submissionless_assignments: true
+  # Ignores the current status of a submissionless assignment until it is graded.
+  # This is useful for stuff you manually turn in, but want to update when graded.
+  # This also allows you to manually mark as submitted until it is graded.
+  # Requires sync_submissionless_assignments to be true.
+  ignore_submissionless_until_graded: true
   # Whether to skip syncing assignments if a proper dropdown option cannot be found.
   # This can be used to skip some courses, if desired.
   # If left false, the program will die until you add the proper option.
