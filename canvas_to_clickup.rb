@@ -341,7 +341,7 @@ all_assignments.each do |course_name, assignments|
   # puts response
 end
 
-print_to_console "\rFinished processing #{index} tasks."
+print_to_console "\nFinished processing #{index} tasks."
 puts "\n"
 
 puts "Created: #{created}"
